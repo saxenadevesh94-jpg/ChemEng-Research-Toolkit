@@ -3,6 +3,7 @@
 from .boundary_conditions import BoundaryCondition, FixedValueBC, ZeroGradientBC
 from .equation import Equation
 from .field import ScalarField, VectorField
+from .linear_system import LinearSystem, SparseMatrix
 from .mesh import Mesh
 from .operators import divergence, gradient, laplacian
 
@@ -17,4 +18,6 @@ __all__ = [
     "laplacian",
     "divergence",
     "Equation",
+    "SparseMatrix",
+    "LinearSystem",
 ]
