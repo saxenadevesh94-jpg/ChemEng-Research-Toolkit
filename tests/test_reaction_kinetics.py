@@ -313,14 +313,15 @@ class TestArrheniusRateConstant:
     def test_arrhenius_temperature_effect_modest_ea(self):
         """
         Temperature increase increases rate constant.
-        For Ea=50 kJ/mol, 10 K increase multiplies k by ~2.5.
+        For Ea=50 kJ/mol, increasing temperature from 298.15 K to 308.15 K
+        increases the rate constant by approximately 1.92×.
         """
         A = 1e8
         Ea = 50000  # 50 kJ/mol
         k_298 = arrhenius_rate_constant(A, Ea, 298.15)
         k_308 = arrhenius_rate_constant(A, Ea, 308.15)  # +10 K
         ratio = k_308 / k_298
-        assert ratio == pytest.approx(2.5, rel=0.1)  # Typical range 2-3
+        assert ratio == pytest.approx(1.9243, rel=0.02)
 
     def test_arrhenius_temperature_effect_high_ea(self):
         """
@@ -371,10 +372,14 @@ class TestArrheniusRateConstant:
         """Reaction at very high temperature (e.g., combustion)"""
         A = 1e10
         Ea = 100000
-        T = 1500  # K (very high)
+        T = 1500  # K
+
         result = arrhenius_rate_constant(A, Ea, T)
-        # k ≈ A (exponent → 0)
-        assert result > 0.99 * A
+
+        R = 8.314
+        expected = A * np.exp(-Ea / (R * T))
+
+        assert result == pytest.approx(expected)
 
 
 # ============================================================================
