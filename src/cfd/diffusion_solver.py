@@ -30,6 +30,13 @@ from .solvers import GaussSeidelSolver, JacobiSolver
 
 _REQUIRED_BOUNDARIES = {"left", "right", "top", "bottom"}
 
+# Corner cells sit on two boundaries at once (e.g. top-left is on both "left"
+# and "top"). Applying BCs in this fixed order — rather than the order the
+# caller happened to list them in — makes the outcome deterministic: left/
+# right are applied last, so a corner's value always comes from its
+# left/right boundary.
+_BOUNDARY_APPLICATION_ORDER = ("top", "bottom", "left", "right")
+
 
 def build_structured_mesh(nx: int, ny: int, length_x: float = 1.0, length_y: float = 1.0) -> Mesh:
     """Build a simple structured, uniformly-spaced 2D Cartesian mesh.
@@ -218,7 +225,9 @@ def assemble_diffusion_system(mesh: Mesh, boundary_conditions: Sequence[Boundary
     # than duplicating their fixed values by hand).
     boundary_field = ScalarField(mesh, np.zeros(mesh.n_cells))
     is_boundary = np.zeros(mesh.n_cells, dtype=bool)
-    for bc in boundary_conditions:
+    bc_by_boundary = {bc.boundary: bc for bc in boundary_conditions}
+    for boundary in _BOUNDARY_APPLICATION_ORDER:
+        bc = bc_by_boundary[boundary]
         bc.apply(boundary_field)
         is_boundary[_boundary_cell_indices(mesh, bc.boundary)] = True
 
