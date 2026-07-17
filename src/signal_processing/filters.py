@@ -233,7 +233,7 @@ def median_filter(data, window_size):
     return filtered_data
 
 
-def savitzky_golay_filter(data, window_length, polyorder):
+def savitzky_golay_filter(data, window_length=None, polyorder=None, window_size=None):
     """
     Apply a Savitzky-Golay filter to a signal.
 
@@ -264,6 +264,12 @@ def savitzky_golay_filter(data, window_length, polyorder):
     """
     if not isinstance(data, np.ndarray):
         raise TypeError("Input data must be a NumPy array.")
+
+    if window_length is None:
+        window_length = window_size
+
+    if window_length is None:
+        raise TypeError("savitzky_golay_filter() missing required argument: 'window_length'")
 
     if not isinstance(window_length, int):
         raise ValueError("Window length must be an integer.")
