@@ -10,6 +10,22 @@ from .field import ScalarField
 from .mesh import Mesh
 
 
+def _validate_structured_mesh(mesh: Mesh) -> None:
+    """Raise ValueError if the mesh is not a complete rectangular grid.
+
+    FixedValueBC/ZeroGradientBC locate boundaries and adjacent interior
+    cells purely from cell-center coordinates, which is only meaningful
+    for a mesh whose cells form a full grid (every x/y combination
+    present exactly once).
+    """
+    if mesh.cell_centers.shape[1] < 2:
+        raise ValueError("field is attached to a mesh that is incompatible with these boundary conditions.")
+    unique_x = np.unique(np.round(mesh.cell_centers[:, 0], decimals=8))
+    unique_y = np.unique(np.round(mesh.cell_centers[:, 1], decimals=8))
+    if unique_x.size * unique_y.size != mesh.n_cells:
+        raise ValueError("field is attached to a mesh that is incompatible with these boundary conditions.")
+
+
 class BoundaryCondition:
     """Base class for mesh boundary conditions."""
 
@@ -46,6 +62,7 @@ class FixedValueBC(BoundaryCondition):
     def _validate_field_size(self, field: ScalarField) -> None:
         if field.values.shape[0] != field.mesh.n_cells:
             raise ValueError("field size is incompatible with the mesh.")
+        _validate_structured_mesh(field.mesh)
 
     def _boundary_indices(self, mesh: Mesh) -> np.ndarray:
         indices = []
@@ -85,6 +102,7 @@ class ZeroGradientBC(BoundaryCondition):
     def _validate_field_size(self, field: ScalarField) -> None:
         if field.values.shape[0] != field.mesh.n_cells:
             raise ValueError("field size is incompatible with the mesh.")
+        _validate_structured_mesh(field.mesh)
 
     def _boundary_indices(self, mesh: Mesh) -> np.ndarray:
         indices = []
@@ -104,8 +122,16 @@ class ZeroGradientBC(BoundaryCondition):
         for index, candidate in enumerate(mesh.cell_centers):
             if index == boundary_index:
                 continue
-            if axis == 0 and np.isclose(candidate[0], point[0] + direction * 1.0):
+            if (
+                axis == 0
+                and np.isclose(candidate[0], point[0] + direction * 1.0)
+                and np.isclose(candidate[1], point[1])
+            ):
                 return index
-            if axis == 1 and np.isclose(candidate[1], point[1] + direction * 1.0):
+            if (
+                axis == 1
+                and np.isclose(candidate[1], point[1] + direction * 1.0)
+                and np.isclose(candidate[0], point[0])
+            ):
                 return index
         raise ValueError("could not find an adjacent interior cell for the requested boundary.")
